@@ -1,0 +1,705 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>親屬稱謂學習地圖｜族譜、稱謂與親等</title>
+<meta name="description" content="給高中生的互動族譜：選定基準人物、連接任兩個人，立刻看到稱謂與親等。">
+<style>
+:root{
+  --bg:#f5f0e6; --card:#fffdf8; --ink:#2a2521; --mute:#7a6f65; --line:#d9cfbf;
+  --accent:#b23a2e; --accent-soft:#f6dcd6; --gold:#a8792a;
+  --m-bg:#e3ecf5; --m-bd:#4f7399; --f-bg:#f8e6e2; --f-bd:#b56a62;
+  --pat:#5b7fa6; --mat:#5f9273; --inl:#c08a3e; --path:#fff3c4;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#1b1917; --card:#262321; --ink:#efe8dd; --mute:#a69b8f; --line:#433d37;
+    --accent:#e8705f; --accent-soft:#4a2a25; --gold:#d9a94e;
+    --m-bg:#25323f; --m-bd:#7fa6cf; --f-bg:#40292a; --f-bd:#d98f86;
+    --pat:#7fa6cf; --mat:#82b796; --inl:#d9a94e; --path:#4d4320;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;line-height:1.6;-webkit-text-size-adjust:100%}
+h1,h2,h3{font-family:"Songti TC","Noto Serif TC","PMingLiU",serif;margin:0;letter-spacing:.04em}
+header{padding:22px 16px 10px;max-width:1500px;margin:0 auto}
+header h1{font-size:clamp(24px,4vw,34px)}
+header h1 span{color:var(--accent)}
+header p{margin:4px 0 0;color:var(--mute);font-size:15px}
+nav{display:flex;gap:6px;max-width:1500px;margin:0 auto;padding:8px 16px 0;flex-wrap:wrap;border-bottom:2px solid var(--line)}
+nav button{font:inherit;font-size:16px;padding:8px 16px;border:0;background:none;color:var(--mute);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
+nav button[aria-selected=true]{color:var(--accent);border-color:var(--accent);font-weight:700}
+main{max-width:1500px;margin:0 auto;padding:14px 16px 40px}
+section[hidden]{display:none}
+.btn{font:inherit;font-size:14px;padding:6px 12px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+select{font:inherit;font-size:15px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);max-width:100%}
+
+/* ---- tree tab ---- */
+.toolbar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin-bottom:10px;font-size:14px}
+.toolbar .grp{display:flex;gap:4px;align-items:center}
+.toolbar .sp{flex:1}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:14px;align-items:start}
+@media (max-width:900px){.layout{grid-template-columns:minmax(0,1fr)}}
+.layout>*{min-width:0}
+.viewport{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:auto;height:min(72vh,720px);cursor:grab;touch-action:pan-x pan-y}
+.viewport.drag{cursor:grabbing}
+@media (max-width:900px){.viewport{height:56vh}}
+.canvas{position:relative}
+.stage{position:absolute;left:0;top:0;transform-origin:0 0}
+.stage svg{position:absolute;left:0;top:0;pointer-events:none}
+.gen{position:absolute;left:6px;font-size:12px;color:var(--mute);writing-mode:vertical-rl;letter-spacing:.2em;opacity:.8}
+.node{position:absolute;width:76px;height:62px;padding:2px;border:2px solid var(--m-bd);background:var(--m-bg);color:var(--ink);font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.2;border-radius:8px;transition:transform .12s, box-shadow .12s}
+.node.F{border-color:var(--f-bd);background:var(--f-bg);border-radius:31px}
+.node:hover{transform:translateY(-2px);box-shadow:0 4px 10px rgba(0,0,0,.18)}
+.node .t{font-weight:700;font-size:15px;white-space:nowrap}
+.node .t.s{font-size:13px}
+.node .n{font-size:11px;color:var(--mute);white-space:nowrap}
+.node.dim{opacity:.38}
+.node.onpath{background:var(--path);opacity:1}
+.node.base{outline:4px solid var(--accent);outline-offset:2px;opacity:1}
+.node.target{outline:4px solid var(--gold);outline-offset:2px;opacity:1}
+.tag{position:absolute;top:-11px;left:50%;transform:translateX(-50%);font-size:11px;padding:0 6px;border-radius:9px;color:#fff;white-space:nowrap;line-height:17px}
+.base .tag{background:var(--accent)} .target .tag{background:var(--gold)}
+.badge{position:absolute;right:-8px;bottom:-8px;min-width:22px;height:22px;border-radius:11px;background:var(--ink);color:var(--bg);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--mute);margin-top:8px;align-items:center}
+.legend i{display:inline-block;width:16px;height:13px;border:2px solid var(--m-bd);background:var(--m-bg);border-radius:3px;vertical-align:-2px;margin-right:4px}
+.legend i.F{border-color:var(--f-bd);background:var(--f-bg);border-radius:8px}
+.legend b{display:inline-block;width:20px;height:3px;vertical-align:middle;margin-right:4px}
+
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.pick{display:grid;grid-template-columns:auto 1fr;gap:6px 8px;align-items:center;font-size:14px}
+.pick .dot{width:12px;height:12px;border-radius:50%;display:inline-block;margin-right:4px}
+.pick-actions{display:flex;gap:6px;margin:10px 0 0;flex-wrap:wrap}
+.result{margin-top:12px;border-top:1px dashed var(--line);padding-top:12px}
+.result .who{font-size:14px;color:var(--mute)}
+.result .term{font-family:"Songti TC","Noto Serif TC",serif;font-size:40px;font-weight:700;color:var(--accent);line-height:1.25;margin:2px 0}
+.result .alt{font-size:14px;color:var(--mute)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.chip{font-size:13px;padding:2px 10px;border-radius:999px;background:var(--accent-soft);color:var(--ink);border:1px solid transparent}
+.chip.deg{background:var(--ink);color:var(--bg);font-weight:700}
+.kv{font-size:14px;margin:8px 0}
+.kv b{display:block;font-size:12px;color:var(--mute);font-weight:400;letter-spacing:.08em}
+.rev{background:var(--bg);border-radius:8px;padding:8px 10px;font-size:14px;margin-top:10px}
+.rev strong{color:var(--accent);font-size:17px}
+.panel a{color:var(--accent)}
+.hint{color:var(--mute);font-size:14px}
+
+/* ---- text tabs ---- */
+.prose{max-width:860px}
+.prose h2{font-size:24px;margin:22px 0 8px}
+.prose h3{font-size:18px;margin:18px 0 6px;color:var(--accent)}
+.prose p,.prose li{font-size:16px}
+.box{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;padding:10px 14px;margin:10px 0}
+.box small{color:var(--mute)}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;background:var(--card);font-size:15px;margin:6px 0 18px}
+th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--accent-soft);white-space:nowrap}
+td.d{white-space:nowrap;text-align:center}
+caption{text-align:left;font-weight:700;padding:6px 0;font-family:"Songti TC","Noto Serif TC",serif;font-size:18px}
+
+/* ---- quiz ---- */
+.quiz{max-width:640px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px}
+.quiz .q{font-size:20px;font-weight:700;margin:6px 0 14px}
+.quiz .opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.quiz .opts button{font:inherit;font-size:18px;padding:12px;border:2px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);cursor:pointer}
+.quiz .opts button:hover:not(:disabled){border-color:var(--accent)}
+.quiz .opts button.ok{border-color:#3d8b55;background:#3d8b5533}
+.quiz .opts button.no{border-color:var(--accent);background:var(--accent-soft)}
+.quiz .fb{margin-top:12px;font-size:15px;min-height:3em}
+.quiz .score{color:var(--mute);font-size:14px;display:flex;justify-content:space-between}
+footer{max-width:1500px;margin:0 auto;padding:0 16px 30px;color:var(--mute);font-size:13px}
+footer a{color:inherit}
+</style>
+</head>
+<body>
+<header>
+  <h1>親屬稱謂<span>學習地圖</span></h1>
+  <p>選一個人當「基準」，再點另一個人──稱謂、親屬類別、幾等親，一次看懂。</p>
+</header>
+<nav role="tablist">
+  <button role="tab" data-tab="tree" aria-selected="true">族譜圖</button>
+  <button role="tab" data-tab="rule" aria-selected="false">親等怎麼算</button>
+  <button role="tab" data-tab="table" aria-selected="false">稱謂總表</button>
+  <button role="tab" data-tab="quiz" aria-selected="false">小測驗</button>
+</nav>
+<main>
+<section id="tab-tree">
+  <div class="toolbar">
+    <div class="grp">「我」是
+      <button class="btn" id="egoM" aria-pressed="true">男生</button>
+      <button class="btn" id="egoF" aria-pressed="false">女生</button>
+    </div>
+    <div class="grp">
+      <button class="btn" id="reset">回到「我」的視角</button>
+    </div>
+    <span class="sp"></span>
+    <div class="grp">
+      <button class="btn" id="zout" aria-label="縮小">－</button>
+      <button class="btn" id="zfit">全覽</button>
+      <button class="btn" id="zin" aria-label="放大">＋</button>
+    </div>
+  </div>
+  <div class="layout">
+    <div>
+      <div class="viewport" id="vp"><div class="canvas" id="canvas"><div class="stage" id="stage"></div></div></div>
+      <div class="legend">
+        <span><i></i>男性</span><span><i class="F"></i>女性</span>
+        <span><b style="background:var(--pat)"></b>父系</span>
+        <span><b style="background:var(--mat)"></b>母系</span>
+        <span><b style="background:var(--inl)"></b>配偶家</span>
+        <span>格子裡的大字＝「基準」對這個人的稱呼；右下角數字＝親等的數法</span>
+      </div>
+    </div>
+    <aside class="panel">
+      <div class="pick">
+        <label for="selA"><span class="dot" style="background:var(--accent)"></span>基準</label><select id="selA"></select>
+        <label for="selB"><span class="dot" style="background:var(--gold)"></span>對象</label><select id="selB"></select>
+      </div>
+      <div class="pick-actions">
+        <button class="btn" id="swap">⇄ 兩人對調</button>
+        <button class="btn primary" id="rebase">以「對象」為新基準</button>
+      </div>
+      <div class="result" id="result"></div>
+    </aside>
+  </div>
+</section>
+
+<section id="tab-rule" hidden>
+<div class="prose">
+  <h2>親屬有哪幾種？</h2>
+  <p>我國《民法》親屬編把親屬分成三類：</p>
+  <ul>
+    <li><b>配偶</b>：因結婚而成立，<b>沒有親等</b>。</li>
+    <li><b>血親</b>：有血緣關係（或因收養而擬制）的人。
+      <ul><li><b>直系血親</b>：己身所從出（父母、祖父母…）或從己身所出（子女、孫子女…）。</li>
+      <li><b>旁系血親</b>：不是直系，但和自己出於同一個祖先（兄弟姊妹、伯叔姑舅姨、堂表兄弟姊妹…）。</li></ul></li>
+    <li><b>姻親</b>：因婚姻而產生，只有三種：<b>血親之配偶</b>（嫂嫂、姑丈、媳婦）、<b>配偶之血親</b>（公婆、岳父母、小姑、小舅子）、<b>配偶之血親之配偶</b>（妯娌、連襟）。</li>
+  </ul>
+  <div class="box">⚠️ 常考陷阱：<b>「血親之配偶之血親」不是姻親</b>。例如兒子的岳父母，我們口語叫「親家」，但法律上並不是親屬。</div>
+
+  <h2>親等怎麼算？</h2>
+  <h3>直系血親：數「世代」</h3>
+  <p>從自己往上或往下數，一世就是一親等。<br>我 → 父母（一親等）→ 祖父母（二親等）→ 曾祖父母（三親等）。</p>
+  <h3>旁系血親：先上山、再下山</h3>
+  <p>從自己往上數到<b>共同的直系血親（同源的祖先）</b>，再從那位祖先往下數到對方，<b>兩段加起來</b>就是親等。</p>
+  <div class="box">
+    例：我和<b>堂哥</b>──我 → 爸爸（1）→ 祖父（2）→ 伯父（3）→ 堂哥（4），所以是<b>旁系血親四親等</b>。<br>
+    例：我和<b>舅舅</b>──我 → 媽媽（1）→ 外祖父（2）→ 舅舅（3），<b>旁系血親三親等</b>。<br>
+    <small>在「族譜圖」點選兩個人，就會看到路上每一步的編號。</small>
+  </div>
+  <h3>姻親：跟著「配偶」算</h3>
+  <ul>
+    <li><b>血親之配偶</b>：跟那位血親一樣。哥哥是二親等旁系血親 → 嫂嫂是二親等旁系姻親。</li>
+    <li><b>配偶之血親</b>：跟配偶和那個人的親等一樣。太太和她爸爸是一親等 → 我和岳父是一親等直系姻親。</li>
+    <li><b>配偶之血親之配偶</b>：跟配偶和那位血親的親等一樣。太太和她姊姊是二親等 → 我和太太的姊夫（連襟）是二親等姻親。</li>
+  </ul>
+
+  <h2>稱謂的規律</h2>
+  <ul>
+    <li><b>伯、叔看年紀</b>：爸爸的哥哥叫伯父，爸爸的弟弟叫叔叔；他們的太太分別是伯母、嬸嬸。</li>
+    <li><b>姑在父系、舅姨在母系</b>：爸爸的姊妹是姑姑（配偶：姑丈）；媽媽的兄弟是舅舅（配偶：舅媽），媽媽的姊妹是阿姨（配偶：姨丈）。</li>
+    <li><b>「堂」與「表」</b>：只有<b>伯父、叔叔的子女</b>（同姓、同宗）叫「堂」；姑姑、舅舅、阿姨的子女一律叫「表」。</li>
+    <li><b>「外」字</b>：經由母親或女兒連結的直系親屬常加「外」──外祖父、外祖母、外孫、外孫女。</li>
+    <li><b>姪與外甥</b>：兄弟的子女是姪子、姪女；姊妹的子女是外甥、外甥女。</li>
+    <li><b>公、婆升一輩</b>：祖父的兄弟是伯公、叔公，姊妹是姑婆；祖母的兄弟是舅公，姊妹是姨婆。</li>
+    <li><b>夫家與妻家</b>：丈夫的父母是公公、婆婆，兄弟是大伯、小叔，姊妹是大姑、小姑；妻子的父母是岳父、岳母，兄弟是大舅子、小舅子，姊妹是大姨子、小姨子。</li>
+  </ul>
+  <div class="box"><small>稱謂有地區與家庭差異（例如臺灣常說阿公、阿嬤、阿祖），本站以教育部《重編國語辭典修訂本》收錄的詞目為主，口語說法列在「也稱」。親等依《民法》第 967–970 條。</small></div>
+</div>
+</section>
+
+<section id="tab-table" hidden>
+  <div class="prose" id="tables"></div>
+</section>
+
+<section id="tab-quiz" hidden>
+  <div class="quiz">
+    <div class="score"><span id="qno"></span><span id="qscore"></span></div>
+    <div class="q" id="qq"></div>
+    <div class="opts" id="qopts"></div>
+    <div class="fb" id="qfb"></div>
+    <button class="btn primary" id="qnext">下一題 →</button>
+  </div>
+</section>
+</main>
+<footer>
+  稱謂用詞參考：教育部<a href="https://dict.revised.moe.edu.tw/" target="_blank" rel="noopener">《重編國語辭典修訂本》</a>；親等計算依據：<a href="https://law.moj.gov.tw/LawClass/LawParaDeatil.aspx?pcode=B0000001&bp=127" target="_blank" rel="noopener">《民法》親屬編</a>第 967–970 條。族譜中的人名皆為虛構。
+</footer>
+
+<script>
+/* ================= 資料：一個虛構的家族 ================= */
+// id|姓名|性別|出生序(年)|列|欄|父母1|父母2|配偶
+const RAW = `
+ggf|陳金土|M|1920|0|3|||ggm
+ggm|黃阿滿|F|1922|0|4|||ggf
+gu|陳福來|M|1948|1|2|ggf|ggm|
+gf|陳福生|M|1945|1|5|ggf|ggm|gm
+gm|李秀英|F|1947|1|6|||gf
+mgf|林文雄|M|1946|1|13|||mgm
+mgm|張玉蘭|F|1948|1|14|||mgf
+u1|陳建國|M|1968|2|0|gf|gm|a1
+a1|吳淑芬|F|1970|2|1|||u1
+au|陳麗華|F|1970|2|2|gf|gm|auh
+auh|趙國強|M|1968|2|3|||au
+u2|陳建民|M|1975|2|4|gf|gm|a2
+a2|許雅惠|F|1977|2|5|||u2
+fa|陳建宏|M|1972|2|10|gf|gm|mo
+mo|林淑貞|F|1974|2|11|mgf|mgm|fa
+pf|王正義|M|1971|2|16|||pm
+pm|蔡秀琴|F|1973|2|17|||pf
+mu|林志偉|M|1976|2|20|mgf|mgm|muw
+muw|周怡君|F|1978|2|21|||mu
+ma|林淑惠|F|1979|2|22|mgf|mgm|mah
+mah|鄭明哲|M|1977|2|23|||ma
+c1|陳冠宇|M|1996|3|0.5|u1|a1|
+c2|趙雅婷|F|1997|3|2.5|auh|au|
+c3|陳思妤|F|2003|3|4.5|u2|a2|
+ob|陳柏翰|M|1996|3|6|fa|mo|obw
+obw|劉佳穎|F|1997|3|7|||ob
+os|陳怡君|F|1998|3|8|fa|mo|osh
+osh|楊宗翰|M|1996|3|9|||os
+yb|陳柏宇|M|2002|3|10|fa|mo|ybw
+ybw|郭欣怡|F|2003|3|11|||yb
+ys|陳怡婷|F|2004|3|12|fa|mo|ysh
+ysh|謝承恩|M|2002|3|13|||ys
+me|陳家豪|M|2000|3|14|fa|mo|sp
+sp|王美玲|F|2000|3|15|pf|pm|me
+sb|王志豪|M|1997|3|16|pf|pm|sbw
+sbw|曾雅雯|F|1998|3|17|||sb
+ss|王美惠|F|2003|3|18|pf|pm|ssh
+ssh|洪偉誠|M|2001|3|19|||ss
+c4|林俊宏|M|1999|3|20.5|mu|muw|
+c5|鄭雨柔|F|2005|3|22.5|mah|ma|
+n1|陳宥廷|M|2024|4|6.5|ob|obw|
+n2|楊子軒|M|2025|4|8.5|osh|os|
+n3|陳品妍|F|2028|4|10.5|yb|ybw|
+n4|謝語彤|F|2029|4|12.5|ysh|ys|
+so|陳宇翔|M|2026|4|14|me|sp|sow
+sow|蘇芷晴|F|2027|4|15|||so
+da|陳宇彤|F|2028|4|16|me|sp|dah
+dah|江承翰|M|2026|4|17|||da
+gs|陳睿恩|M|2052|5|14|so|sow|
+gd|陳芮安|F|2054|5|15|so|sow|
+dgs|江宸宇|M|2053|5|16|dah|da|
+dgd|江苡安|F|2055|5|17|dah|da|
+`;
+const P = {}, LIST = [];
+RAW.trim().split('\n').forEach(l => {
+  const [id,name,g,by,row,col,p1,p2,sp] = l.split('|');
+  LIST.push(P[id] = {id,name,g,by:+by,row:+row,col:+col,p1,p2,sp});
+});
+
+/* ================= 稱謂引擎 ================= */
+const ZH = ['〇','一','二','三','四','五','六','七','八','九','十'];
+const isM = p => p.g === 'M';
+const older = (x, y) => x.by < y.by;           // x 比 y 年長
+const parents = p => [p.p1, p.p2].filter(Boolean).map(i => P[i]).sort((a,b)=> (isM(b)?1:0)-(isM(a)?1:0));
+const T = (t, alt, note) => ({t, alt, note});
+
+function ancestors(a){
+  const m = new Map([[a.id,[a]]]), q = [a];
+  while(q.length){ const x = q.shift();
+    for(const p of parents(x)) if(!m.has(p.id)){ m.set(p.id,[...m.get(x.id),p]); q.push(p); } }
+  return m;
+}
+// 找最近的共同祖先；up[0]=a … up[u]=共同祖先；down[0]=共同祖先 … down[d]=b
+function blood(a, b){
+  const ma = ancestors(a), mb = ancestors(b); let best = null;
+  for(const [id, pa] of ma){ const pb = mb.get(id); if(!pb) continue;
+    const n = pa.length + pb.length;
+    if(!best || n < best.n) best = {n, up:pa, down:[...pb].reverse()}; }
+  return best && {u:best.up.length-1, d:best.down.length-1, up:best.up, down:best.down};
+}
+const key = r => r.u + ',' + r.d;
+const allM = arr => arr.every(isM);
+
+// 血親稱謂
+function bt(a, b, r){
+  const {u,d,up,down:dn} = r, m = isM(b), p1 = up[1], p2 = up[2];
+  switch(key(r)){
+    case '1,0': return m ? T('爸爸','父親') : T('媽媽','母親');
+    case '0,1': return m ? T('兒子') : T('女兒');
+    case '2,0': return isM(p1) ? (m ? T('祖父','爺爺、阿公') : T('祖母','奶奶、阿嬤'))
+                               : (m ? T('外祖父','外公、阿公') : T('外祖母','外婆、阿嬤'));
+    case '0,2': return isM(dn[1]) ? T(m?'孫子':'孫女') : T(m?'外孫':'外孫女');
+    case '3,0': return allM([p1,p2]) ? T(m?'曾祖父':'曾祖母','阿祖') : T(m?'外曾祖父':'外曾祖母','阿祖');
+    case '0,3': return allM([dn[1],dn[2]]) ? T(m?'曾孫':'曾孫女') : T(m?'外曾孫':'外曾孫女');
+    case '4,0': return allM([p1,p2,up[3]]) ? T(m?'高祖父':'高祖母') : null;
+    case '0,4': return allM([dn[1],dn[2],dn[3]]) ? T(m?'玄孫':'玄孫女') : null;
+    case '5,0': return allM(up.slice(1,5)) ? T(m?'天祖父':'天祖母') : null;
+    case '0,5': return allM(dn.slice(1,5)) ? T(m?'來孫':'來孫女') : null;
+    case '1,1': return m ? (older(b,a) ? T('哥哥','兄') : T('弟弟'))
+                         : (older(b,a) ? T('姊姊','姐姐') : T('妹妹'));
+    case '2,1': return isM(p1) ? (m ? (older(b,p1) ? T('伯父','伯伯') : T('叔叔','叔父')) : T('姑姑','姑母、姑媽'))
+                               : (m ? T('舅舅','舅父') : T('阿姨','姨母、姨媽'));
+    case '1,2': return isM(dn[1]) ? T(m?'姪子':'姪女') : T(m?'外甥':'外甥女');
+    case '2,2': { const x = dn[1], tang = isM(p1) && isM(x);
+      const kind = tang ? '' : isM(p1) ? '姑表' : isM(x) ? '舅表' : '姨表';
+      const s = m ? (older(b,a)?'哥':'弟') : (older(b,a)?'姊':'妹');
+      return T((tang?'堂':'表') + s, tang ? '堂'+({哥:'兄',弟:'弟',姊:'姊',妹:'妹'})[s] : kind + ({哥:'兄',弟:'弟',姊:'姊',妹:'妹'})[s]); }
+    case '3,1': return isM(p2) ? (m ? (older(b,p2) ? T('伯公','伯祖父') : T('叔公','叔祖父')) : T('姑婆','祖姑母'))
+                               : (m ? T('舅公') : T('姨婆'));
+    case '1,3': return isM(dn[1]) ? T(m?'姪孫':'姪孫女') : T(m?'外甥孫':'外甥孫女');
+    case '4,1': return allM([p1,p2,up[3]]) ? (m ? T(older(b,up[3])?'曾伯祖父':'曾叔祖父') : T('曾祖姑母')) : null;
+    case '3,2': { const x = dn[1], pre = (isM(p2) && isM(x)) ? '堂' : '表';
+      return isM(p1) ? T(pre + (m ? (older(b,p1)?'伯':'叔') : '姑')) : T(pre + (m ? '舅' : '姨')); }
+    case '2,3': { const pre = (isM(p1) && isM(dn[1])) ? '堂' : '表';
+      return isM(dn[2]) ? T(pre + (m?'姪':'姪女')) : T(pre + (m?'外甥':'外甥女')); }
+  }
+  return null;
+}
+// 血親之配偶：b 是 a 的血親 c 的配偶
+const SPOUSE_OF = {伯父:['伯母','伯娘'],叔叔:['嬸嬸','嬸母、叔母'],姑姑:['姑丈','姑父'],舅舅:['舅媽','舅母'],阿姨:['姨丈','姨父'],
+  伯公:['伯婆','伯祖母'],叔公:['嬸婆','叔婆'],姑婆:['姑丈公'],舅公:['舅婆','妗婆'],姨婆:['姨丈公']};
+function bsT(a, c, b, r){
+  const base = bt(a, c, r), cm = isM(c);
+  switch(key(r)){
+    case '0,1': return cm ? T('媳婦','兒媳') : T('女婿');
+    case '0,2': return T((isM(r.down[1]) ? '孫' : '外孫') + (cm ? '媳婦' : '女婿'));
+    case '1,1': return cm ? (older(c,a) ? T('嫂嫂','嫂子、大嫂') : T('弟媳','弟妹'))
+                          : (older(c,a) ? T('姊夫','姐夫') : T('妹夫','妹婿'));
+    case '1,2': return T(base.t.replace(/[子女]$/,'') + (cm ? '媳婦' : '女婿'));
+    case '2,2': return T(base.t[0] + (cm ? (older(c,a)?'嫂':'弟媳') : (older(c,a)?'姊夫':'妹夫')));
+    case '2,1': case '3,1': if(base && SPOUSE_OF[base.t]) return T(...SPOUSE_OF[base.t]);
+  }
+  return base ? T(null, null, `${base.t}的${isM(b)?'丈夫':'妻子'}`) : null;
+}
+// 配偶之血親：b 是 a 的配偶 s 的血親
+function sbT(a, s, b, r){
+  const m = isM(b), wife = !isM(a);   // wife=true：a 是妻子，s 是丈夫
+  const follow = wife ? '隨丈夫稱呼' : '隨妻子稱呼';
+  switch(key(r)){
+    case '1,0': return wife ? (m ? T('公公','爸爸（隨丈夫稱呼）') : T('婆婆','媽媽（隨丈夫稱呼）'))
+                            : (m ? T('岳父','丈人、爸爸（隨妻子稱呼）') : T('岳母','丈母娘、媽媽（隨妻子稱呼）'));
+    case '1,1': { const o = older(b, s);
+      return wife ? (m ? T(o?'大伯':'小叔', o?'哥哥（隨丈夫稱呼）':'弟弟（隨丈夫稱呼）') : T(o?'大姑':'小姑', o?'姊姊（隨丈夫稱呼）':'妹妹（隨丈夫稱呼）'))
+                  : (m ? T(o?'大舅子':'小舅子', o?'內兄、哥哥（隨妻子稱呼）':'內弟、弟弟（隨妻子稱呼）') : T(o?'大姨子':'小姨子', o?'姊姊（隨妻子稱呼）':'妹妹（隨妻子稱呼）')); }
+    case '1,2': if(!wife) return isM(r.down[1]) ? T(m?'內姪':'內姪女', '姪子／姪女（隨妻子稱呼）') : T(m?'姨甥':'姨甥女', '外甥／外甥女（隨妻子稱呼）');
+  }
+  const base = bt(s, b, r);
+  return base ? T(base.t, base.alt, follow) : null;
+}
+// 配偶之血親之配偶：b 是 a 的配偶 s 的血親 c 的配偶
+function sbsT(a, s, c, b, r){
+  const base = bsT(s, c, b, r); if(!base || !base.t) return base;
+  const wife = !isM(a);
+  if(key(r) === '1,1' && wife && isM(c)) return T(base.t, base.alt, '兩人互為「妯娌」（兄弟的妻子彼此的關係）');
+  if(key(r) === '1,1' && !wife && !isM(c)) return T(base.t, base.alt, '兩人互為「連襟」（姊妹的丈夫彼此的關係）');
+  return T(base.t, base.alt, wife ? '隨丈夫稱呼' : '隨妻子稱呼');
+}
+
+// 路徑：每一步 {p, s:'up'|'down'|'sp'}
+const chainOf = r => [...r.up.slice(1).map(p=>({p,s:'up'})), ...r.down.slice(1).map(p=>({p,s:'down'}))];
+const sibWord = (c, s) => isM(c) ? (older(c,s)?'哥哥':'弟弟') : (older(c,s)?'姊姊':'妹妹');
+const spWord = p => isM(p) ? '丈夫' : '妻子';
+function wordsOf(r){
+  const {u,d,up,down} = r, w = [], lim = d > 0 ? u-1 : u;
+  for(let i=1;i<=lim;i++) w.push(isM(up[i])?'爸爸':'媽媽');
+  if(u>0 && d>0) w.push(sibWord(down[1], up[u-1]));
+  for(let i=(u>0?2:1);i<=d;i++) w.push(isM(down[i])?'兒子':'女兒');
+  return w;
+}
+function lineInfo(r){
+  const n = r.u + r.d, line = (r.u===0 || r.d===0) ? '直系' : '旁系';
+  const gen = r.d - r.u, rank = gen < 0 ? '尊親屬' : gen > 0 ? '卑親屬' : '';
+  return {n, line, rank};
+}
+const q = p => `「${p.name}」`;
+function countText(x, y, r){
+  const top = r.up[r.u];
+  if(r.d === 0) return `從${q(x)}往上數 ${r.u} 世到${q(y)}`;
+  if(r.u === 0) return `從${q(x)}往下數 ${r.d} 世到${q(y)}`;
+  return `從${q(x)}往上數 ${r.u} 世到共同祖先${q(top)}，再往下數 ${r.d} 世到${q(y)}，${r.u}＋${r.d}＝${r.u+r.d}`;
+}
+
+function rel(a, b){
+  if(a === b) return {kind:'self', term:T('自己'), chain:[], words:[]};
+  let r = blood(a, b);
+  if(r){ const L = lineInfo(r);
+    return {kind:'blood', term:bt(a,b,r), chain:chainOf(r), words:wordsOf(r), r, deg:L.n,
+      cls:`${L.line}血親${L.rank}`, how:`${countText(a,b,r)}，所以是${ZH[L.n]}親等。`}; }
+  const S = a.sp && P[a.sp], C = b.sp && P[b.sp];
+  if(S === b) return {kind:'spouse', term:isM(b)?T('丈夫','先生、老公'):T('妻子','太太、老婆'), chain:[{p:b,s:'sp'}], words:[spWord(b)],
+    cls:'配偶', how:'配偶之間沒有親等；配偶既不是血親，也不是姻親。'};
+  if(C && (r = blood(a, C))){ const L = lineInfo(r);
+    return {kind:'bs', term:bsT(a,C,b,r), chain:[...chainOf(r),{p:b,s:'sp'}], words:[...wordsOf(r),spWord(b)], r, deg:L.n,
+      cls:`${L.line}姻親${L.rank}`, sub:'血親之配偶',
+      how:`${q(b)}是血親${q(C)}的配偶。血親之配偶，親等跟著那位血親算：${countText(a,C,r)}＝${ZH[L.n]}親等，所以${q(b)}是${ZH[L.n]}親等姻親。`}; }
+  if(S && (r = blood(S, b))){ const L = lineInfo(r);
+    return {kind:'sb', term:sbT(a,S,b,r), chain:[{p:S,s:'sp'},...chainOf(r)], words:[spWord(S),...wordsOf(r)], r, deg:L.n,
+      cls:`${L.line}姻親${L.rank}`, sub:'配偶之血親',
+      how:`${q(b)}是配偶${q(S)}的血親。配偶之血親，親等跟著配偶算：${countText(S,b,r)}＝${ZH[L.n]}親等，所以${q(b)}是${ZH[L.n]}親等姻親。`}; }
+  if(S && C && (r = blood(S, C))){ const L = lineInfo(r);
+    return {kind:'sbs', term:sbsT(a,S,C,b,r), chain:[{p:S,s:'sp'},...chainOf(r),{p:b,s:'sp'}], words:[spWord(S),...wordsOf(r),spWord(b)], r, deg:L.n,
+      cls:`${L.line}姻親${L.rank}`, sub:'配偶之血親之配偶',
+      how:`${q(b)}是配偶${q(S)}的血親${q(C)}的配偶。親等跟著配偶與那位血親算：${countText(S,C,r)}＝${ZH[L.n]}親等，所以${q(b)}是${ZH[L.n]}親等姻親。`}; }
+  // 血親之配偶之血親（法律上不是親屬）
+  let best = null;
+  for(const c of LIST){ if(c === a || !c.sp) continue;
+    const r1 = blood(a, c); if(!r1) continue;
+    const D = P[c.sp], r2 = blood(D, b); if(!r2) continue;
+    const n = r1.u + r1.d + r2.u + r2.d;
+    if(!best || n < best.n) best = {n, c, D, r1, r2}; }
+  if(best){ const {c, D, r1, r2} = best;
+    const qj = key(r1) === '0,1' && key(r2) === '1,0';
+    return {kind:'none', term: qj ? T(isM(b)?'親家公':'親家母','親家') : null,
+      chain:[...chainOf(r1),{p:D,s:'sp'},...chainOf(r2)], words:[...wordsOf(r1),spWord(D),...wordsOf(r2)],
+      cls:'法律上不是親屬', sub:'血親之配偶之血親',
+      how:`${q(b)}是血親${q(c)}的配偶${q(D)}的血親。「血親之配偶之血親」不在民法第 969 條的姻親範圍內，所以沒有親等${qj?'；口語上互稱「親家」':'，通常依輩分客氣稱呼（如伯父、伯母、大哥、大姊）'}。`}; }
+  return {kind:'far', term:null, chain:[], words:[], cls:'沒有親屬關係', how:'這兩個人之間沒有血親或姻親關係。'};
+}
+const shortLabel = R => (R.term && R.term.t) || ({blood:'遠房血親', bs:'姻親', sb:'姻親', sbs:'姻親', none:'非親屬', far:'—'})[R.kind];
+
+/* ================= 族譜圖 ================= */
+const UX = 88, RH = 112, NW = 76, NH = 62, PADX = 34, PADY = 26;
+const W = 24*UX + PADX*2 - (UX-NW), H = 6*RH + PADY*2 - (RH-NH);
+const X = p => PADX + p.col*UX, Y = p => PADY + p.row*RH;
+const state = {a:'me', b:null, z:1};
+const stage = document.getElementById('stage'), canvas = document.getElementById('canvas'), vp = document.getElementById('vp');
+const GEN = ['曾祖輩','祖輩','父母輩','同輩','子女輩','孫輩'];
+
+function drawLines(){
+  const fams = new Map();
+  for(const c of LIST){ if(!c.p1) continue; const k = [c.p1,c.p2].sort().join('+');
+    if(!fams.has(k)) fams.set(k, {ps:[P[c.p1],P[c.p2]], kids:[]}); fams.get(k).kids.push(c); }
+  const color = f => { const ids = f.ps.map(p=>p.id);
+    if(ids.includes('pf')) return 'var(--inl)'; if(ids.includes('mgf') || ids.includes('mu') || ids.includes('ma')) return 'var(--mat)'; return 'var(--pat)'; };
+  let s = '';
+  const seen = new Set();
+  for(const p of LIST){ if(!p.sp || seen.has(p.sp)) continue; seen.add(p.id);
+    const o = P[p.sp], l = X(p) < X(o) ? p : o, r = l === p ? o : p;
+    s += `<line x1="${X(l)+NW}" y1="${Y(l)+NH/2}" x2="${X(r)}" y2="${Y(r)+NH/2}" stroke="var(--mute)" stroke-width="2" stroke-dasharray="2 3"/>`; }
+  for(const f of fams.values()){
+    const [p, o] = f.ps, mid = (X(p)+X(o))/2 + NW/2, y0 = Y(p)+NH/2, col = color(f);
+    const lvl = f.ps.some(x=>x.id==='mgf') ? 26 : 14, busY = Y(f.kids[0]) - lvl;
+    const xs = f.kids.map(k => X(k)+NW/2), lo = Math.min(mid,...xs), hi = Math.max(mid,...xs);
+    s += `<g stroke="${col}" stroke-width="2.5" fill="none" stroke-linecap="round"><path d="M${mid} ${y0}V${busY}M${lo} ${busY}H${hi}`;
+    for(const k of f.kids) s += `M${X(k)+NW/2} ${busY}V${Y(k)}`;
+    s += `"/></g>`; }
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${s}</svg>`;
+}
+function buildStage(){
+  let h = drawLines();
+  GEN.forEach((g,i) => h += `<div class="gen" style="top:${PADY+i*RH}px;height:${NH}px">${g}</div>`);
+  for(const p of LIST) h += `<button class="node ${p.g}" data-id="${p.id}" style="left:${X(p)}px;top:${Y(p)}px"></button>`;
+  stage.innerHTML = h; stage.style.width = W+'px'; stage.style.height = H+'px';
+}
+function applyZoom(){
+  stage.style.transform = `scale(${state.z})`;
+  canvas.style.width = W*state.z+'px'; canvas.style.height = H*state.z+'px';
+}
+function setZoom(z, keepCenter = true){
+  const cx = (vp.scrollLeft + vp.clientWidth/2)/state.z, cy = (vp.scrollTop + vp.clientHeight/2)/state.z;
+  state.z = Math.max(.35, Math.min(1.6, z)); applyZoom();
+  if(keepCenter){ vp.scrollLeft = cx*state.z - vp.clientWidth/2; vp.scrollTop = cy*state.z - vp.clientHeight/2; }
+}
+function centerOn(p, smooth = true){
+  vp.scrollTo({left:(X(p)+NW/2)*state.z - vp.clientWidth/2, top:(Y(p)+NH/2)*state.z - vp.clientHeight/2, behavior: smooth?'smooth':'auto'});
+}
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function render(){
+  const A = P[state.a], B = state.b && P[state.b];
+  const R = B && B !== A ? rel(A, B) : null;
+  const steps = new Map(); let n = 0;
+  if(R) for(const st of R.chain) steps.set(st.p.id, st.s === 'sp' ? '配' : ++n);
+  for(const el of stage.querySelectorAll('.node')){
+    const p = P[el.dataset.id], r = rel(A, p), lab = shortLabel(r);
+    el.className = `node ${p.g}` + (p===A?' base':'') + (p===B&&p!==A?' target':'') + (steps.has(p.id)?' onpath':'') + (R && p!==A && p!==B && !steps.has(p.id) ? ' dim':'');
+    el.innerHTML = `<span class="t${lab.length>3?' s':''}">${esc(lab)}</span><span class="n">${esc(p.name)}</span>`
+      + (p===A ? '<span class="tag">基準</span>' : p===B ? '<span class="tag">對象</span>' : '')
+      + (steps.has(p.id) ? `<span class="badge">${steps.get(p.id)}</span>` : '');
+    el.title = `${p.name}：${lab}`;
+  }
+  renderPanel(A, B, R);
+  history.replaceState(null, '', '#' + state.a + (state.b ? '-' + state.b : ''));
+}
+const dictLink = t => `<a href="https://dict.revised.moe.edu.tw/search.jsp?md=1&word=${encodeURIComponent(t)}" target="_blank" rel="noopener">查教育部辭典「${esc(t)}」↗</a>`;
+function termHtml(R){
+  const t = R.term;
+  if(t && t.t) return `<div class="term">${esc(t.t)}</div>` + (t.alt ? `<div class="alt">也稱：${esc(t.alt)}</div>` : '') + (t.note ? `<div class="alt">${esc(t.note)}</div>` : '');
+  return `<div class="term" style="font-size:24px">沒有專門的稱謂</div>` + (t && t.note ? `<div class="alt">可說成「${esc(t.note)}」</div>` : '');
+}
+function renderPanel(A, B, R){
+  const box = document.getElementById('result');
+  document.getElementById('selA').value = A.id;
+  document.getElementById('selB').value = B ? B.id : '';
+  document.getElementById('rebase').disabled = !R;
+  document.getElementById('swap').disabled = !R;
+  if(!R){ box.innerHTML = `<p class="hint">👆 目前以<b>「${esc(A.name)}」</b>為基準，族譜上每一格的大字就是他／她對那個人的稱呼。<br><br>點一下族譜上的任何人（或在上方選「對象」），就能看到兩人之間的稱謂、親屬類別與親等算法。</p>`; return; }
+  const back = rel(B, A), bt_ = back.term && back.term.t;
+  box.innerHTML = `
+    <div class="who">「${esc(A.name)}」稱呼「${esc(B.name)}」為</div>
+    ${termHtml(R)}
+    <div class="chips">
+      <span class="chip">${esc(R.cls)}</span>
+      ${R.sub ? `<span class="chip">${esc(R.sub)}</span>` : ''}
+      <span class="chip deg">${R.deg ? ZH[R.deg]+'親等' : '無親等'}</span>
+    </div>
+    ${R.words.length ? `<div class="kv"><b>關係路徑</b>${esc(A.name)}的${esc(R.words.join('的'))}</div>` : ''}
+    <div class="kv"><b>親等怎麼算</b>${esc(R.how)}</div>
+    <div class="rev">反過來，「${esc(B.name)}」稱呼「${esc(A.name)}」為 <strong>${esc(bt_ || '（沒有專門的稱謂）')}</strong>${back.term && back.term.alt ? `<br><span class="hint">也稱：${esc(back.term.alt)}</span>`:''}</div>
+    ${R.term && R.term.t ? `<div class="kv">${dictLink(R.term.t)}</div>` : ''}`;
+}
+function fillSelects(){
+  const me = P.me;
+  const opts = LIST.map(p => { const r = rel(me, p); return `<option value="${p.id}">${esc(p.name)}（${p===me ? '我' : '我的'+esc(shortLabel(r))}）</option>`; }).join('');
+  document.getElementById('selA').innerHTML = opts;
+  document.getElementById('selB').innerHTML = '<option value="">— 請選擇 —</option>' + opts;
+}
+function setEgo(g){
+  const me = P.me, sp = P.sp;
+  me.g = g; sp.g = g === 'M' ? 'F' : 'M';
+  me.name = g === 'M' ? '陳家豪' : '陳家宜'; sp.name = g === 'M' ? '王美玲' : '王俊傑';
+  document.getElementById('egoM').setAttribute('aria-pressed', g === 'M');
+  document.getElementById('egoF').setAttribute('aria-pressed', g === 'F');
+  buildStage(); applyZoom(); fillSelects(); render();
+}
+
+stage.addEventListener('click', e => {
+  const el = e.target.closest('.node'); if(!el || dragged) return;
+  state.b = el.dataset.id === state.a ? null : el.dataset.id; render();
+});
+document.getElementById('selA').onchange = e => { state.a = e.target.value; if(state.b === state.a) state.b = null; render(); centerOn(P[state.a]); };
+document.getElementById('selB').onchange = e => { state.b = e.target.value && e.target.value !== state.a ? e.target.value : null; render(); if(state.b) centerOn(P[state.b]); };
+document.getElementById('swap').onclick = () => { if(state.b){ [state.a, state.b] = [state.b, state.a]; render(); } };
+document.getElementById('rebase').onclick = () => { if(state.b){ state.a = state.b; state.b = null; render(); centerOn(P[state.a]); } };
+document.getElementById('reset').onclick = () => { state.a = 'me'; state.b = null; render(); centerOn(P.me); };
+document.getElementById('egoM').onclick = () => setEgo('M');
+document.getElementById('egoF').onclick = () => setEgo('F');
+document.getElementById('zin').onclick = () => setZoom(state.z + .15);
+document.getElementById('zout').onclick = () => setZoom(state.z - .15);
+document.getElementById('zfit').onclick = () => { setZoom(Math.min(vp.clientWidth / W, vp.clientHeight / H), false); vp.scrollTo(0,0); };
+
+// 滑鼠拖曳平移
+let dragged = false, drag = null;
+vp.addEventListener('pointerdown', e => { if(e.pointerType !== 'mouse' || e.button) return; drag = {x:e.clientX, y:e.clientY, l:vp.scrollLeft, t:vp.scrollTop}; dragged = false; });
+window.addEventListener('pointermove', e => { if(!drag) return; const dx = e.clientX-drag.x, dy = e.clientY-drag.y;
+  if(Math.abs(dx)+Math.abs(dy) > 5){ dragged = true; vp.classList.add('drag'); }
+  if(dragged){ vp.scrollLeft = drag.l - dx; vp.scrollTop = drag.t - dy; } });
+window.addEventListener('pointerup', () => { drag = null; vp.classList.remove('drag'); setTimeout(() => dragged = false, 0); });
+
+/* ================= 稱謂總表 ================= */
+const TABLES = [
+ ['直系血親', [
+  ['父親／母親','爸爸、媽媽','生我的人','一'],
+  ['祖父／祖母','爺爺、奶奶；阿公、阿嬤','父親的父母','二'],
+  ['外祖父／外祖母','外公、外婆；阿公、阿嬤','母親的父母','二'],
+  ['曾祖父／曾祖母','阿祖','祖父的父母','三'],
+  ['兒子／女兒','','自己的子女','一'],
+  ['孫子／孫女','','兒子的子女','二'],
+  ['外孫／外孫女','','女兒的子女','二'],
+  ['曾孫／曾孫女','','孫子的子女','三']]],
+ ['旁系血親', [
+  ['哥哥、弟弟、姊姊、妹妹','兄、弟、姊、妹','同父母的手足','二'],
+  ['伯父','伯伯','父親的哥哥','三'],
+  ['叔父','叔叔','父親的弟弟','三'],
+  ['姑母','姑姑、姑媽','父親的姊妹','三'],
+  ['舅父','舅舅','母親的兄弟','三'],
+  ['姨母','阿姨、姨媽','母親的姊妹','三'],
+  ['姪子／姪女','','兄弟的子女','三'],
+  ['外甥／外甥女','','姊妹的子女','三'],
+  ['堂哥、堂弟、堂姊、堂妹','堂兄弟姊妹','伯父、叔叔的子女','四'],
+  ['表哥、表弟、表姊、表妹','表兄弟姊妹','姑姑、舅舅、阿姨的子女','四'],
+  ['伯公／叔公','伯祖父、叔祖父','祖父的哥哥／弟弟','四'],
+  ['姑婆','祖姑母','祖父的姊妹','四'],
+  ['舅公／姨婆','','祖母的兄弟／姊妹','四']]],
+ ['姻親：血親之配偶', [
+  ['伯母','','伯父的妻子','三'],
+  ['嬸嬸','嬸母、叔母','叔叔的妻子','三'],
+  ['姑丈','姑父','姑姑的丈夫','三'],
+  ['舅媽','舅母','舅舅的妻子','三'],
+  ['姨丈','姨父','阿姨的丈夫','三'],
+  ['嫂嫂／弟媳','嫂子／弟妹','哥哥／弟弟的妻子','二'],
+  ['姊夫／妹夫','姐夫／妹婿','姊姊／妹妹的丈夫','二'],
+  ['媳婦／女婿','兒媳','兒子的妻子／女兒的丈夫','一'],
+  ['孫媳婦／孫女婿','','孫子的妻子／孫女的丈夫','二']]],
+ ['姻親：配偶之血親', [
+  ['公公／婆婆','','丈夫的父母','一'],
+  ['岳父／岳母','丈人、丈母娘','妻子的父母','一'],
+  ['大伯／小叔','','丈夫的哥哥／弟弟','二'],
+  ['大姑／小姑','','丈夫的姊姊／妹妹','二'],
+  ['大舅子／小舅子','內兄／內弟','妻子的哥哥／弟弟','二'],
+  ['大姨子／小姨子','','妻子的姊姊／妹妹','二'],
+  ['內姪／內姪女','','妻子兄弟的子女','三']]],
+ ['姻親：配偶之血親之配偶', [
+  ['妯娌','','兄弟的妻子彼此互稱（＝丈夫兄弟的妻子）','二'],
+  ['連襟','','姊妹的丈夫彼此互稱（＝妻子姊妹的丈夫）','二']]],
+ ['口語有稱呼、但法律上不是親屬', [
+  ['親家（親家公／親家母）','','子女配偶的父母（血親之配偶之血親）','無']]]
+];
+document.getElementById('tables').innerHTML = '<h2>稱謂總表</h2><p>以「我」為基準。親等欄依《民法》計算；「無」表示不是法律上的親屬。</p>' + TABLES.map(([cap, rows]) =>
+  `<div class="tablewrap"><table><caption>${cap}</caption><thead><tr><th>稱謂</th><th>也稱</th><th>是誰</th><th>親等</th></tr></thead><tbody>` +
+  rows.map(r => `<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td><td class="d">${r[3]}</td></tr>`).join('') + '</tbody></table></div>').join('');
+
+/* ================= 小測驗 ================= */
+const quiz = {n:0, ok:0, done:false};
+const rnd = arr => arr[Math.floor(Math.random()*arr.length)];
+const shuffle = arr => arr.map(v => [Math.random(), v]).sort((a,b)=>a[0]-b[0]).map(v => v[1]);
+function quizPool(){
+  const pool = [];
+  for(const a of LIST) for(const b of LIST){ if(a === b) continue; const R = rel(a, b);
+    if(!R.term || !R.term.t || R.kind === 'far' || R.kind === 'none') continue;
+    if(R.words.length > 4) continue;
+    if(R.kind !== 'blood' && R.r && key(R.r) === '2,2') continue;     // 堂嫂、表姊夫等需額外年齡資訊，略過
+    pool.push({a, b, R}); }
+  return pool;
+}
+function nextQ(){
+  const pool = quizPool(), {a, b, R} = rnd(pool);
+  let path = '我的' + R.words.join('的');
+  if(R.kind === 'blood' && key(R.r) === '2,2') path += `（比我${older(b,a)?'年長':'年幼'}）`;
+  const who = (R.kind === 'sb' || R.kind === 'sbs' || R.kind === 'spouse') ? `（我是${isM(a)?'男':'女'}生）` : '';
+  const askDeg = Math.random() < .3 && R.kind !== 'spouse';
+  let ans, opts, text;
+  if(askDeg){
+    ans = ZH[R.deg] + '親等';
+    const cand = new Set([ans]); for(const d of shuffle([1,2,3,4,5,6])) { if(cand.size < 4) cand.add(ZH[d]+'親等'); }
+    opts = [...cand].sort((x,y) => ZH.indexOf(x[0]) - ZH.indexOf(y[0]));
+    text = `${who}「${R.term.t}」（${path}）和我是幾親等？`;
+  } else {
+    ans = R.term.t;
+    const all = [...new Set(pool.map(x => x.R.term.t))].filter(t => t !== ans);
+    opts = shuffle([ans, ...shuffle(all).slice(0,3)]);
+    text = `${who}「${path}」，我應該怎麼稱呼？`;
+  }
+  quiz.n++; quiz.done = false;
+  document.getElementById('qno').textContent = `第 ${quiz.n} 題`;
+  document.getElementById('qscore').textContent = `答對 ${quiz.ok} 題`;
+  document.getElementById('qq').textContent = text;
+  document.getElementById('qfb').innerHTML = '';
+  const box = document.getElementById('qopts'); box.innerHTML = '';
+  for(const o of opts){ const btn = document.createElement('button'); btn.textContent = o;
+    btn.onclick = () => { if(quiz.done) return; quiz.done = true;
+      const right = o === ans; if(right) quiz.ok++;
+      for(const x of box.children){ x.disabled = true; if(x.textContent === ans) x.classList.add('ok'); }
+      if(!right) btn.classList.add('no');
+      document.getElementById('qscore').textContent = `答對 ${quiz.ok} 題`;
+      document.getElementById('qfb').innerHTML = `${right ? '✅ 答對了！' : '❌ 正確答案是「'+esc(ans)+'」。'}<br><span class="hint">${esc(R.cls)}${R.sub?'（'+esc(R.sub)+'）':''}・${R.deg?ZH[R.deg]+'親等':'無親等'}。${R.r && R.r.u && R.r.d ? `（旁系：往上 ${R.r.u} 世＋往下 ${R.r.d} 世）` : ''}</span>`;
+    };
+    box.appendChild(btn); }
+}
+document.getElementById('qnext').onclick = nextQ;
+
+/* ================= 分頁 ================= */
+for(const b of document.querySelectorAll('nav button')) b.onclick = () => {
+  for(const x of document.querySelectorAll('nav button')) x.setAttribute('aria-selected', x === b);
+  for(const s of document.querySelectorAll('main > section')) s.hidden = s.id !== 'tab-' + b.dataset.tab;
+  if(b.dataset.tab === 'quiz' && !quiz.n) nextQ();
+};
+
+/* ================= 啟動 ================= */
+buildStage(); fillSelects();
+{ const [ha, hb] = location.hash.slice(1).split('-'); if(P[ha]){ state.a = ha; if(P[hb] && hb !== ha) state.b = hb; } }
+state.z = vp.clientWidth < 700 ? .8 : Math.max(.85, Math.min(1, vp.clientWidth / W));
+applyZoom(); render(); centerOn(P[state.b || state.a], false);
+window.__kin = {P, LIST, rel, shortLabel};
+</script>
+</body>
+</html>
