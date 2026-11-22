@@ -448,8 +448,8 @@ function sbT(a, s, b, r){
 function sbsT(a, s, c, b, r){
   const base = bsT(s, c, b, r); if(!base || !base.t) return base;
   const wife = !isM(a);
-  if(key(r) === '1,1' && wife && isM(c)) return T(base.t, base.alt, '兩人互為「妯娌」（兄弟的妻子彼此的關係）');
-  if(key(r) === '1,1' && !wife && !isM(c)) return T(base.t, base.alt, '兩人互為「連襟」（姊妹的丈夫彼此的關係）');
+  if(key(r) === '1,1' && wife && isM(c)) return T('妯娌', `當面多隨丈夫稱「${base.t}」`, '兄弟的妻子彼此互稱或合稱「妯娌」');
+  if(key(r) === '1,1' && !wife && !isM(c)) return T('連襟', `${older(c,s)?'襟兄':'襟弟'}；當面多隨妻子稱「${base.t}」`, '姊妹的丈夫彼此互稱或合稱「連襟」');
   return T(base.t, base.alt, wife ? '隨丈夫稱呼' : '隨妻子稱呼');
 }
 
