@@ -477,11 +477,18 @@ function countText(x, y, r){
   return `從${q(x)}往上數 ${r.u} 世到共同祖先${q(top)}，再往下數 ${r.d} 世到${q(y)}，${r.u}＋${r.d}＝${r.u+r.d}`;
 }
 
+const UPGEN = ['自己','父母','祖父母','曾祖父母','高祖父母','天祖父母'], DNGEN = ['自己','子女','孫','曾孫','玄孫','來孫'];
+function genericBlood(r){
+  const {u, d} = r, g = d - u;
+  if(d === 0) return T(null, null, (UPGEN[u] || `往上第 ${u} 代`) + '輩的直系尊親屬，口語多統稱「阿祖」或「祖先」');
+  if(u === 0) return T(null, null, (DNGEN[d] || `往下第 ${d} 代`) + '輩的直系卑親屬');
+  return T(null, null, `和我同一對${UPGEN[u] || `第 ${u} 代祖先`}的旁系血親，${g === 0 ? '與我同輩' : g < 0 ? `比我高 ${-g} 輩` : `比我低 ${g} 輩`}，可依輩分比照近親稱呼`);
+}
 function rel(a, b){
   if(a === b) return {kind:'self', term:T('自己'), chain:[], words:[]};
   let r = blood(a, b);
   if(r){ const L = lineInfo(r);
-    return {kind:'blood', term:bt(a,b,r), chain:chainOf(r), words:wordsOf(r), r, deg:L.n,
+    return {kind:'blood', term:bt(a,b,r) || genericBlood(r), chain:chainOf(r), words:wordsOf(r), r, deg:L.n,
       cls:`${L.line}血親${L.rank}`, how:`${countText(a,b,r)}，所以是${ZH[L.n]}親等。`}; }
   const S = a.sp && P[a.sp], C = b.sp && P[b.sp];
   if(S === b) return {kind:'spouse', term:isM(b)?T('丈夫','先生、老公'):T('妻子','太太、老婆'), chain:[{p:b,s:'sp'}], words:[spWord(b)],
