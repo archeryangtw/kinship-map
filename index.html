@@ -287,7 +287,7 @@ ggf|楊金土|M|1920|0|3|||ggm
 ggm|張阿滿|F|1922|0|4|||ggf
 gu|楊福來|M|1948|1|2|ggf|ggm|
 gf|楊福生|M|1945|1|5|ggf|ggm|gm
-gm|黃秀英|F|1947|1|6|||gf
+gm|黃秀英|F|1947|1|6|gmf|gmm|gf
 mgf|王文雄|M|1946|1|13|||mgm
 mgm|林玉蘭|F|1948|1|14|||mgf
 u1|楊建國|M|1968|2|0|gf|gm|a1
@@ -300,13 +300,13 @@ fa|楊建宏|M|1972|2|10|gf|gm|mo
 mo|王淑貞|F|1974|2|11|mgf|mgm|fa
 pf|李正義|M|1971|2|16|||pm
 pm|蔡秀琴|F|1973|2|17|||pf
-mu|王志偉|M|1976|2|20|mgf|mgm|muw
-muw|周怡君|F|1978|2|21|||mu
-ma|王淑惠|F|1979|2|22|mgf|mgm|mah
-mah|鄭明哲|M|1977|2|23|||ma
-c1|楊冠宇|M|1996|3|0.5|u1|a1|
-c2|趙雅婷|F|1997|3|2.5|auh|au|
-c3|楊思妤|F|2003|3|4.5|u2|a2|
+mu|王志偉|M|1976|2|22|mgf|mgm|muw
+muw|周怡君|F|1978|2|23|||mu
+ma|王淑惠|F|1979|2|24|mgf|mgm|mah
+mah|鄭明哲|M|1977|2|25|||ma
+c1|楊冠宇|M|1996|3|0|u1|a1|
+c2|趙雅婷|F|1997|3|2|auh|au|
+c3|楊思妤|F|2003|3|5|u2|a2|
 ob|楊柏翰|M|1996|3|6|fa|mo|obw
 obw|劉佳穎|F|1997|3|7|||ob
 os|楊怡君|F|1998|3|8|fa|mo|osh
@@ -317,12 +317,12 @@ ys|楊怡婷|F|2004|3|12|fa|mo|ysh
 ysh|謝承恩|M|2002|3|13|||ys
 me|楊譯|M|2000|3|14|fa|mo|sp
 sp|李美玲|F|2000|3|15|pf|pm|me
-sb|李志豪|M|1997|3|16|pf|pm|sbw
-sbw|曾雅雯|F|1998|3|17|||sb
-ss|李美惠|F|2003|3|18|pf|pm|ssh
-ssh|洪偉誠|M|2001|3|19|||ss
-c4|王俊宏|M|1999|3|20.5|mu|muw|
-c5|鄭雨柔|F|2005|3|22.5|mah|ma|
+sb|李志豪|M|1997|3|18|pf|pm|sbw
+sbw|曾雅雯|F|1998|3|19|||sb
+ss|李美惠|F|2003|3|16|pf|pm|ssh
+ssh|洪偉誠|M|2001|3|17|||ss
+c4|王俊宏|M|1999|3|22.5|mu|muw|
+c5|鄭雨柔|F|2005|3|24.5|mah|ma|
 n1|楊宥廷|M|2024|4|6.5|ob|obw|
 n2|陳子軒|M|2025|4|8.5|osh|os|
 n3|楊品妍|F|2028|4|10.5|yb|ybw|
@@ -331,10 +331,26 @@ so|楊宇翔|M|2026|4|14|me|sp|sow
 sow|蘇芷晴|F|2027|4|15|||so
 da|楊宇彤|F|2028|4|16|me|sp|dah
 dah|江承翰|M|2026|4|17|||da
-gs|楊睿恩|M|2052|5|14|so|sow|
-gd|楊芮安|F|2054|5|15|so|sow|
+gs|楊睿恩|M|2052|5|13|so|sow|gsw
+gd|楊芮安|F|2054|5|14|so|sow|
 dgs|江宸宇|M|2053|5|16|dah|da|
 dgd|江苡安|F|2055|5|17|dah|da|
+gmf|黃水木|M|1921|0|7|||gmm
+gmm|高阿梅|F|1923|0|8|||gmf
+gu0|楊福壽|M|1942|1|1|ggf|ggm|
+ga|楊秀蘭|F|1950|1|3|ggf|ggm|
+gmb|黃金龍|M|1944|1|7|gmf|gmm|
+gms|黃秀珠|F|1950|1|8|gmf|gmm|
+c1b|楊雅琪|F|1998|3|1|u1|a1|
+c2b|趙家瑋|M|2004|3|3|auh|au|
+c3b|楊承佑|M|2006|3|4|u2|a2|
+ses|李美華|F|1995|3|20|pf|pm|
+syb|李志明|M|2005|3|21|pf|pm|
+wn1|李冠廷|M|2027|4|18|sb|sbw|
+wn2|李宜蓁|F|2029|4|19|sb|sbw|
+gsw|吳語晴|F|2053|5|12|||gs
+ggs|楊子睿|M|2078|6|12|gs|gsw|
+ggd|楊子晴|F|2080|6|13|gs|gsw|
 `;
 let P = {}, LIST = [];
 RAW.trim().split('\n').forEach(l => {
@@ -528,11 +544,11 @@ const shortLabel = R => (R.term && R.term.t) || ({blood:'遠房血親', bs:'姻�
 
 /* ================= 族譜圖 ================= */
 const UX = 88, RH = 112, NW = 76, NH = 62, PADX = 34, PADY = 26;
-const W = 24*UX + PADX*2 - (UX-NW), H = 6*RH + PADY*2 - (RH-NH);
+const W = 26*UX + PADX*2 - (UX-NW), H = 7*RH + PADY*2 - (RH-NH);
 const X = p => PADX + p.col*UX, Y = p => PADY + p.row*RH;
 const state = {a:'me', b:null, z:1};
 const stage = document.getElementById('stage'), canvas = document.getElementById('canvas'), vp = document.getElementById('vp');
-const GEN = ['曾祖輩','祖輩','父母輩','同輩','子女輩','孫輩'];
+const GEN = ['曾祖輩','祖輩','父母輩','同輩','子女輩','孫輩','曾孫輩'];
 
 function drawLines(){
   const fams = new Map();
