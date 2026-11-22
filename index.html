@@ -128,6 +128,15 @@ caption{text-align:left;font-weight:700;padding:6px 0;font-family:"Songti TC","N
 .keys .key{font-size:17px;padding:12px 4px}.keys .key:disabled{opacity:.35;cursor:not-allowed}
 table.deg th{width:9.5em;white-space:normal;vertical-align:top}
 .kt{display:inline-block;margin:2px 14px 6px 0;vertical-align:top}.kt b{font-size:16px}.kt small{display:block;color:var(--mute);font-size:12px;max-width:22em}
+.quiz{max-width:720px}
+.quiz .q{line-height:1.5}
+.ol{color:var(--mute);font-size:.85em;margin-right:2px}
+.fb .yes{font-weight:700;color:#3d8b55}.fb .nope{font-weight:700;color:var(--accent)}
+.exp{margin:8px 0 12px;padding:10px 14px;background:var(--bg);border-left:4px solid var(--gold);border-radius:8px;font-size:15px}
+.exp ol{margin:6px 0;padding-left:22px}.exp li{margin-bottom:5px}
+.exp .why{margin:8px 0 0;padding-top:8px;border-top:1px dashed var(--line);color:var(--accent)}
+details.exp summary{cursor:pointer;color:var(--mute)}
+.review .exp{font-size:14px}
 footer{max-width:1500px;margin:0 auto;padding:0 16px 30px;color:var(--mute);font-size:13px}
 footer a{color:inherit}
 </style>
@@ -806,17 +815,17 @@ function buildCatalog(){
         const me = {name:'我', g:'M', by:0};
         const {r, b, note} = synth(me, u, d, ug, dg, sOld, bOld), I = info(r), w = wordsOf(r).join('的') + note;
         const t = bt(me, b, r);
-        if(t && t.t) add({t:t.t, alt:t.alt, path:w, kind:'blood', sub:'', cls:`${I.line}血親${I.rank}`, ...I});
+        if(t && t.t) add({t:t.t, alt:t.alt, path:w, kind:'blood', sub:'', cls:`${I.line}血親${I.rank}`, u, d, ...I});
         const bs = bsT(me, b, {g:opp(b.g), by:b.by}, r);
-        if(bs && bs.t) add({t:bs.t, alt:bs.alt, path:w + '的' + (isM(b)?'妻子':'丈夫'), kind:'bs', sub:'血親之配偶', cls:`${I.line}姻親${I.rank}`, ...I});
+        if(bs && bs.t) add({t:bs.t, alt:bs.alt, path:w + '的' + (isM(b)?'妻子':'丈夫'), kind:'bs', sub:'血親之配偶', cls:`${I.line}姻親${I.rank}`, u, d, ...I});
         if(u+d > 3) continue;
         for(const ag of ['M','F']){
           const a = {name:'我', g:ag, by:0}, s = {name: ag==='M'?'妻子':'丈夫', g:opp(ag), by:0};
           const y = synth(s, u, d, ug, dg, sOld, bOld), w2 = spWord(s) + '的' + wordsOf(y.r).join('的');
           const st = sbT(a, s, y.b, y.r);
-          if(st && st.t && !(st.note||'').startsWith('隨')) add({t:st.t, alt:st.alt, path:w2, kind:'sb', sub:'配偶之血親', cls:`${I.line}姻親${I.rank}`, who:ag, ...I});
+          if(st && st.t && !(st.note||'').startsWith('隨')) add({t:st.t, alt:st.alt, path:w2, kind:'sb', sub:'配偶之血親', cls:`${I.line}姻親${I.rank}`, who:ag, u, d, ...I});
           if(u === 1 && d === 1){ const b2 = {g:opp(y.b.g), by:y.b.by}, ss = sbsT(a, s, y.b, b2, y.r);
-            if(ss && ss.t) add({t:ss.t, alt:ss.alt, note:ss.note, path:w2 + '的' + spWord(b2), kind:'sbs', sub:'配偶之血親之配偶', cls:`${I.line}姻親${I.rank}`, who:ag, ...I}); }
+            if(ss && ss.t) add({t:ss.t, alt:ss.alt, note:ss.note, path:w2 + '的' + spWord(b2), kind:'sbs', sub:'配偶之血親之配偶', cls:`${I.line}姻親${I.rank}`, who:ag, u, d, ...I}); }
         }
       } }
   return out;
@@ -872,17 +881,146 @@ document.getElementById('kshuf').onclick = cardsReset;
 const ROUND = 10, quiz = {n:0, ok:0, wrong:[], done:false, pool:[]};
 const CLS_OPTS = ['直系血親','旁系血親','姻親（血親之配偶）','姻親（配偶之血親）','姻親（配偶之血親之配偶）'];
 const clsOf = e => e.kind === 'blood' ? e.line + '血親' : `姻親（${e.sub}）`;
-function makeQ(pool){
-  const e = rnd(pool), type = rnd(['term','term','who','deg','cls']);
+const cat3 = e => e.kind === 'blood' ? e.line + '血親' : '姻親';
+const catFull = e => e.line + (e.kind === 'blood' ? '血親' : '姻親');
+const HINTS = [
+  [/岳|公公|婆婆|舅子|姨子|大伯|小叔|大姑|小姑/, '口訣：丈夫家是「公婆、伯叔、姑」；妻子家是「岳父母、舅子、姨子」。'],
+  [/連襟|妯娌/, '口訣：姊妹的丈夫互為「連襟」，兄弟的妻子互為「妯娌」。'],
+  [/堂|表/, '口訣：「堂」只用在爸爸的兄弟（伯父、叔叔）那一支，同姓同宗；姑姑、舅舅、阿姨那幾支一律是「表」。'],
+  [/^伯|^叔|嬸/, '口訣：比爸爸年長的兄弟是「伯」，年幼的是「叔」；伯父的妻子是伯母，叔叔的妻子是嬸嬸。'],
+  [/姑|舅|姨/, '口訣：爸爸的姊妹是「姑」；媽媽的兄弟是「舅」、姊妹是「姨」。'],
+  [/姪|甥/, '口訣：兄弟的子女是「姪」，姊妹的子女是「外甥」。'],
+  [/外/, '口訣：經由媽媽或女兒連起來的直系親屬，常加「外」字。'],
+  [/嫂|弟媳|姊夫|妹夫|媳婦|女婿/, '口訣：血親的另一半都是姻親，親等和那位血親相同。']];
+const hintOf = t => (HINTS.find(([re]) => re.test(t)) || [])[1];
+function stepsOf(e){
+  const n = ZH[e.deg];
+  const cnt = e.d === 0 ? `往上數 ${e.u} 世` : e.u === 0 ? `往下數 ${e.d} 世` : `先往上數 ${e.u} 世到共同祖先（${UPGEN[e.u]}），再往下數 ${e.d} 世，${e.u}＋${e.d}＝${e.deg}`;
+  const L = [`「${e.t}」＝${whoTxt(e)}我的${e.path}。`];
+  if(e.kind === 'blood') L.push(e.line === '直系' ? '和我是上下一直線的關係（己身所從出，或從己身所出），屬於<b>直系血親</b>。' : '不是上下一直線，但和我出於同一個祖先，屬於<b>旁系血親</b>。', `親等：從我${cnt}，所以是<b>${n}親等</b>。`);
+  if(e.kind === 'bs') L.push('對方和我沒有血緣，是我的「血親」的配偶，屬於<b>姻親（血親之配偶）</b>。', `親等跟著那位血親算：從我${cnt}，所以是<b>${n}親等姻親</b>。`);
+  if(e.kind === 'sb') L.push('對方是我「配偶」的血親，屬於<b>姻親（配偶之血親）</b>。', `親等跟著配偶算：從配偶${cnt}，所以是<b>${n}親等姻親</b>。`);
+  if(e.kind === 'sbs') L.push('對方是我「配偶的血親」的配偶，屬於<b>姻親（配偶之血親之配偶）</b>。', `親等跟著配偶與那位血親算：從配偶${cnt}，所以是<b>${n}親等姻親</b>。`);
+  const h = hintOf(e.t); if(h) L.push(h);
+  return L;
+}
+const pickTerm = t => { const x = CAT.find(c => c.t === t); return x ? `你選的「${t}」是指${whoTxt(x)}我的${x.path}（${degTxt(x)}），和題目問的不是同一個人。` : ''; };
+const pickPath = pth => { const x = CAT.find(c => '我的'+c.path === pth); return x ? `你選的「${pth}」應該稱為「${x.t}」（${degTxt(x)}）。` : ''; };
+
+function qBasic(pool){
+  const e = rnd(pool), type = rnd(['term','term','who','deg','cls']), steps = stepsOf(e);
   const near = shuffle(pool.filter(x => x.t !== e.t && x.kind === e.kind && Math.abs(x.deg - e.deg) <= 1));
   const others = shuffle(CAT.filter(x => x.t !== e.t));
   const pick = (key, n) => { const set = new Set(); for(const x of [...near, ...others]){ if(x[key] !== e[key]) set.add(x[key]); if(set.size >= n) break; } return [...set]; };
-  if(type === 'term') return {e, text:`${whoTxt(e)}「我的${e.path}」，我應該怎麼稱呼？`, ans:e.t, opts:shuffle([e.t, ...pick('t', 3)])};
+  if(type === 'term') return {steps, text:`${whoTxt(e)}「我的${e.path}」，我應該怎麼稱呼？`, ans:e.t, opts:shuffle([e.t, ...pick('t', 3)]), why:pickTerm};
   if(type === 'who'){ const ds = []; for(const x of [...near, ...others]){ if(!ds.some(y => y.t === x.t) && !CAT.some(c => c.t === e.t && c.path === x.path)) ds.push(x); if(ds.length >= 3) break; }
-    return {e, text:`${whoTxt(e)}「${e.t}」指的是誰？`, ans:'我的'+e.path, opts:shuffle([e, ...ds].map(x => '我的'+x.path)), long:true}; }
+    return {steps, text:`${whoTxt(e)}「${e.t}」指的是誰？`, ans:'我的'+e.path, opts:shuffle([e, ...ds].map(x => '我的'+x.path)), long:true, why:pickPath}; }
   if(type === 'deg'){ const ans = ZH[e.deg]+'親等', set = new Set([e.deg]); for(const d of [e.deg-1, e.deg+1, e.deg+2, e.deg-2, 1, 2, 3]) if(d >= 1 && d <= 6 && set.size < 4) set.add(d);
-    return {e, text:`${whoTxt(e)}「${e.t}」（我的${e.path}）和我是幾親等？`, ans, opts:[...set].sort().map(d => ZH[d]+'親等')}; }
-  return {e, text:`${whoTxt(e)}「${e.t}」（我的${e.path}）屬於哪一類親屬？`, ans:clsOf(e), opts:CLS_OPTS, long:true};
+    return {steps, text:`${whoTxt(e)}「${e.t}」（我的${e.path}）和我是幾親等？`, ans, opts:[...set].sort().map(d => ZH[d]+'親等'),
+      why:() => '親等要一步一步數：直系數世代；旁系要先數到共同祖先再數下來，兩段都要算；姻親則跟著配偶或那位血親算。'}; }
+  return {steps, text:`${whoTxt(e)}「${e.t}」（我的${e.path}）屬於哪一類親屬？`, ans:clsOf(e), opts:CLS_OPTS, long:true,
+    why:() => '先問「有沒有血緣」：有就是血親（再分直系、旁系）；沒有血緣、因為婚姻才有關係的是姻親，再看是誰的配偶、誰的血親。'};
+}
+
+/* 會考風格：情境、組合、順序、家族表 */
+const NICK = ['小安','阿樂','小宇','阿晴','小恩','阿翔','小語','阿哲'];
+function qScene(pool){
+  const e = rnd(pool), ego = e.who === 'F' ? '小美' : '小明', nm = rnd(NICK), ans = catFull(e) + ZH[e.deg] + '親等';
+  const cand = new Set();
+  for(const c of shuffle(['直系血親','旁系血親','直系姻親','旁系姻親'])) if(c !== catFull(e)) cand.add(c + ZH[e.deg] + '親等');
+  if(e.deg > 1) cand.add(catFull(e) + ZH[e.deg-1] + '親等'); cand.add(catFull(e) + ZH[e.deg+1] + '親等');
+  return {steps:[`把自己當成${ego}：${nm}是「我的${e.path}」，也就是「${e.t}」。`, ...stepsOf(e).slice(1)],
+    text:`${ego}在家族聚會上遇到${nm}，長輩說：「${nm}是你${e.path.replace('比我','比你')}。」依我國《民法》，${nm}和${ego}的親屬關係是？`,
+    ans, opts:shuffle([ans, ...shuffle([...cand]).slice(0,3)]),
+    why:pk => [pk.includes('姻親') !== ans.includes('姻親') ? '先判斷有沒有血緣：有血緣是血親，因婚姻而來的才是姻親。' : '',
+      pk.slice(0,2) !== ans.slice(0,2) ? '直系是上下一直線（祖孫、父母子女）；其餘有共同祖先的都是旁系。' : '',
+      pk.slice(-3) !== ans.slice(-3) ? '親等要一步一步數：直系數世代；旁系要加上「往上到共同祖先」那一段；姻親跟著配偶或那位血親算。' : ''].join('')};
+}
+const commonOf = pool => { const c = pool.filter(e => LEVELS[1](e) && !/曾/.test(e.t)); return c.length >= 6 ? c : pool; };
+function singleCat(pool){
+  pool = commonOf(pool);
+  const m = new Map(); for(const e of pool){ if(!m.has(e.t)) m.set(e.t, new Set()); m.get(e.t).add(cat3(e)); }
+  const by = {}; for(const [t, set] of m) if(set.size === 1){ const c = [...set][0]; (by[c] = by[c] || []).push(t); }
+  return by;
+}
+function qGroup(pool){
+  const by = singleCat(pool), cats = Object.keys(by).filter(c => by[c].length >= 3);
+  if(!cats.length || Object.keys(by).length < 2) return null;
+  const target = rnd(cats), rest = Object.keys(by).filter(c => c !== target).flatMap(c => by[c]);
+  const catOfT = t => Object.keys(by).find(c => by[c].includes(t));
+  const good = shuffle(by[target]).slice(0,3), opts = [good.join('、')];
+  for(let k=0;k<3;k++){ const nBad = 1 + (k % 2), g = shuffle([...shuffle(by[target]).slice(0, 3-nBad), ...shuffle(rest).slice(0, nBad)]).join('、'); if(!opts.includes(g)) opts.push(g); }
+  if(opts.length < 4) return null;
+  return {text:`下列各組稱謂中，哪一組「全部」都是我的${target}？`, ans:opts[0], opts:shuffle(opts), long:true,
+    steps:opts.map(o => o.split('、').map(t => `${t}（${catOfT(t)}）`).join('、')).map((x, i) => (i ? '其他選項：' : '正確的一組：') + x),
+    why:pk => { const bad = pk.split('、').filter(t => catOfT(t) !== target); return `你選的那一組裡，${bad.map(t => `「${t}」是${catOfT(t)}`).join('，')}，所以不符合「全部都是${target}」。`; }};
+}
+function qOrder(pool){
+  const by = singleCat(pool), need = ['直系血親','旁系血親','姻親'];
+  if(need.some(c => !by[c] || !by[c].length)) return null;
+  const order = shuffle(need), terms = order.map(c => rnd(by[c])), tag = shuffle(['甲','乙','丙']);
+  const ans = tag.join(' → '), perms = [['甲','乙','丙'],['甲','丙','乙'],['乙','甲','丙'],['乙','丙','甲'],['丙','甲','乙'],['丙','乙','甲']].map(x => x.join(' → '));
+  const list = ['甲','乙','丙'].map(g => `${g}：${terms[tag.indexOf(g)]}`).join('　');
+  return {text:`小明過年時先後遇到三位親戚，他們和小明的關係依序是「${order.join(' → ')}」。三位親戚分別是　${list}。小明遇到他們的先後順序是？`,
+    ans, opts:shuffle([ans, ...shuffle(perms.filter(x => x !== ans)).slice(0,3)]),
+    steps:['先把三個人各自分類：' + ['甲','乙','丙'].map(g => `${g}「${terms[tag.indexOf(g)]}」是${order[tag.indexOf(g)]}`).join('；') + '。', `再照題目的順序「${order.join(' → ')}」排出來：${ans}。`],
+    why:() => '這類題目先不要急著排順序，把每個稱謂各自判斷成直系血親、旁系血親或姻親，再對照題目的順序。'};
+}
+function qTree(){
+  const me = P.me, ppl = LIST.filter(p => p !== me && p.row >= 1 && p.row <= 4);
+  const lab = p => shortLabel(rel(me, p)) + p.name;
+  const typ = R => R.kind === 'blood' ? R.cls.slice(0,4) : R.kind === 'spouse' ? '配偶' : ['bs','sb','sbs'].includes(R.kind) ? '姻親' : '法律上不是親屬';
+  const target = rnd(['姻親','姻親','旁系血親','直系血親','配偶']), found = {}; let ok = null;
+  for(let k=0;k<600 && !(ok && Object.keys(found).length >= 3);k++){
+    const x = rnd(ppl), y = rnd(ppl); if(x === y) continue; const R = rel(x, y), t = typ(R);
+    const item = {txt:`${lab(x)} 和 ${lab(y)}`, exp:`${lab(x)}稱${lab(y)}為「${(R.term && R.term.t) || '（無專稱）'}」：${R.cls}${R.sub ? '（'+R.sub+'）' : ''}${R.deg ? '，'+ZH[R.deg]+'親等' : ''}`};
+    if(t === target){ if(!ok) ok = item; } else if(!found[t]) found[t] = item;
+  }
+  const wrong = Object.values(found).slice(0,3); if(!ok || wrong.length < 3) return null;
+  const all = [ok, ...wrong];
+  return {text:`請對照「族譜圖」分頁的楊家（稱謂以${me.name}為基準）。下列哪一組的兩個人，彼此之間的關係是「${target}」？`, ans:ok.txt, opts:shuffle(all.map(a => a.txt)), long:true,
+    steps:all.map(a => a.exp + '。'), why:pk => `你選的那一組：${all.find(a => a.txt === pk).exp}，不是${target}。判斷時要以「這兩個人彼此」為準，不是以${me.name}為準。`};
+}
+const BANK = [
+ {text:'媽媽和嬸嬸都是祖父母的媳婦，雖然不住在一起，但感情很好。媽媽和嬸嬸互為什麼關係？', opts:['妯娌','連襟','姑嫂','親家'],
+  steps:['媽媽是爸爸的妻子，嬸嬸是叔叔（爸爸的弟弟）的妻子。','兄弟的妻子彼此互稱「妯娌」，屬於姻親（配偶之血親之配偶），二親等。','連襟＝姊妹的丈夫彼此；姑嫂＝妻子與丈夫的姊妹；親家＝子女配偶的父母雙方。']},
+ {text:'爸爸和姨丈（媽媽的妹妹的丈夫）互為什麼關係？', opts:['連襟','妯娌','親家','旁系血親'],
+  steps:['媽媽和阿姨是姊妹，爸爸和姨丈分別是她們的丈夫。','姊妹的丈夫彼此互稱「連襟」，屬於姻親（配偶之血親之配偶），二親等。','兩人沒有血緣，所以不是血親。']},
+ {text:'媽媽和姑姑（爸爸的妹妹）之間是什麼關係？', opts:['姑嫂，二親等旁系姻親','妯娌，二親等旁系姻親','姊妹，二親等旁系血親','沒有親屬關係'],
+  steps:['姑姑是爸爸的妹妹，也就是媽媽的「丈夫的妹妹」（小姑）；媽媽是姑姑的「哥哥的妻子」（嫂嫂）。','這種關係合稱「姑嫂」，屬於姻親；爸爸和姑姑是二親等，所以媽媽和姑姑是二親等旁系姻親。','妯娌是「兄弟的妻子」彼此，姑姑不是誰的妻子進到這個家，所以不是妯娌。']},
+ {text:'小明結婚後，小明的父母和他妻子的父母互稱「親家」。依我國《民法》，雙方的關係是？', opts:['不是法律上的親屬','一親等直系姻親','二親等旁系姻親','旁系血親'],
+  steps:['民法的姻親只有三種：血親之配偶、配偶之血親、配偶之血親之配偶。','對小明的父母來說，媳婦的父母是「血親（小明）之配偶之血親」，不在這三種之內。','所以親家只是口語稱呼，法律上不是親屬，也沒有親等。']},
+ {text:'依我國《民法》，下列何者「沒有親等」？', opts:['配偶','岳父','外祖母','養父母'],
+  steps:['親等用來計算血親和姻親的遠近；配偶彼此是「配偶」身分，不計親等。','岳父是一親等直系姻親；外祖母是二親等直系血親；養父母與養子女視同婚生，是一親等直系血親（擬制血親）。']},
+ {text:'依我國《民法》，下列何者「不是」我的姻親？', opts:['兒子的岳母（親家母）','嫂嫂','岳父','妻子的妹夫（連襟）'],
+  steps:['嫂嫂＝血親之配偶；岳父＝配偶之血親；連襟＝配偶之血親之配偶，這三種都是姻親。','親家母是「血親之配偶之血親」，不在民法規定的姻親範圍內。']},
+ {text:'小華被王先生夫婦依法收養。小華和養父母之間的關係是？', opts:['擬制血親（法定血親），一親等直系血親','一親等直系姻親','二親等旁系血親','沒有親屬關係'],
+  steps:['血親分為「自然血親」（有血緣）和「擬制血親」（法律擬制，例如收養）。','養子女和養父母的關係，原則上和婚生子女相同，所以是一親等直系血親。']},
+ {text:'阿強和妻子離婚後，阿強和前岳父之間的姻親關係會如何？', opts:['因離婚而消滅','仍然是一親等直系姻親','變成旁系姻親','變成血親'],
+  steps:['姻親是因婚姻而產生的親屬關係。','依《民法》第 971 條，姻親關係因離婚而消滅。','補充：為了維護倫常，曾經是直系姻親的人（例如前岳母、前公公），即使姻親關係消滅後仍不得結婚。']},
+ {text:'依我國《民法》，下列哪一組「不得」結婚？', opts:['表哥和表妹','同姓但沒有親屬關係的兩人','沒有任何親屬關係的同事','七親等的遠房表親'],
+  steps:['《民法》第 983 條：直系血親、直系姻親不得結婚；旁系血親在六親等以內不得結婚；旁系姻親在五親等以內且輩分不同者不得結婚。','表兄妹是四親等旁系血親，在六親等以內，所以不得結婚。','七親等已超出範圍；「同姓」本身不是法律上的禁婚理由。']},
+ {text:'老王過世，留下妻子、兒子、老王的母親和老王的弟弟。依《民法》規定，誰是法定繼承人？', opts:['妻子和兒子','妻子、兒子、母親、弟弟四人','只有兒子','妻子、兒子和母親'],
+  steps:['《民法》第 1138 條：配偶一定是繼承人，其他人依順序：①直系血親卑親屬 ②父母 ③兄弟姊妹 ④祖父母。','有前面順序的人，後面順序就不能繼承。老王有兒子（第一順序），所以母親（第二順序）和弟弟（第三順序）都不能繼承。','因此由配偶和兒子共同繼承。']},
+ {text:'阿美未婚、沒有子女，過世時父母都健在，還有一個哥哥。依《民法》規定，誰是法定繼承人？', opts:['父母','哥哥','父母和哥哥','祖父母'],
+  steps:['繼承順序：①直系血親卑親屬 ②父母 ③兄弟姊妹 ④祖父母；配偶另外一定繼承。','阿美沒有配偶，也沒有第一順序的子女，所以由第二順序的父母繼承。','哥哥是第三順序，前面有人就輪不到。']},
+ {text:'計算「旁系血親」的親等，下列哪一種方法正確？', opts:['從自己往上數到共同的祖先，再往下數到對方，兩段相加','只要從自己往上數到共同的祖先就好','旁系血親一律是二親等','看兩個人的年齡差距'],
+  steps:['《民法》第 968 條：旁系血親從己身數至同源之直系血親，再由同源之直系血親數至與之計算親等之血親，以其總世數為親等數。','例如堂哥：我→爸爸→祖父（2 世），祖父→伯父→堂哥（2 世），合計四親等。']}
+];
+function qBank(){ const b = rnd(BANK); return {text:b.text, ans:b.opts[0], opts:shuffle(b.opts), long:true, steps:b.steps, why:() => ''}; }
+function makeQ(){
+  const mode = document.getElementById('qtype').value, pool = quiz.pool;
+  for(let k=0;k<20;k++){
+    const r = Math.random();
+    const f = mode === 'basic' ? qBasic : mode === 'exam' ? rnd([qScene, qScene, qGroup, qOrder, qTree, qBank, qBank]) : (r < .45 ? qBasic : rnd([qScene, qScene, qGroup, qOrder, qTree, qBank]));
+    const Q = f(pool); if(Q && new Set(Q.opts).size === Q.opts.length && Q.opts.length >= 4 && Q.text !== quiz.last) { quiz.last = Q.text; return Q; }
+  }
+  return qBasic(pool);
+}
+function explainHtml(Q, pick, right){
+  const why = !right && Q.why ? Q.why(pick) : '';
+  const body = `<ol>${Q.steps.map(x => `<li>${x}</li>`).join('')}</ol>` + (why ? `<p class="why">✎ 為什麼你選的不對：${why}</p>` : '');
+  return right ? `<details class="exp"><summary>看詳解</summary>${body}</details>` : `<div class="exp"><b>詳解</b>${body}</div>`;
 }
 function quizStart(){
   quiz.pool = poolOf(document.getElementById('qscope').value, document.getElementById('qlevel').value);
@@ -893,26 +1031,26 @@ function quizNext(){
   if(quiz.n >= ROUND){
     const pct = quiz.ok / ROUND, msg = pct === 1 ? '全對！稱謂達人 🎉' : pct >= .8 ? '很不錯，只差一點點！' : pct >= .6 ? '及格了，再練一輪會更熟。' : '先到「學習卡」或「稱謂總表」複習一下再來挑戰。';
     body.innerHTML = `<div class="q">本輪成績：${quiz.ok}／${ROUND}</div><p>${msg}</p>` +
-      (quiz.wrong.length ? '<h3 style="font-size:16px;margin:12px 0 4px">錯題複習</h3><ol class="review">' + quiz.wrong.map(w => `<li>${esc(w.q.text)}<br><b>正確答案：${esc(w.q.ans)}</b>（你選：${esc(w.pick)}）<br><span class="hint">${esc(degTxt(w.q.e))}</span></li>`).join('') + '</ol>' : '') +
+      (quiz.wrong.length ? '<h3 style="font-size:16px;margin:12px 0 4px">錯題複習</h3><ol class="review">' + quiz.wrong.map(w => `<li>${esc(w.q.text)}<br><b>正確答案：${esc(w.q.ans)}</b>（你選：${esc(w.pick)}）${explainHtml(w.q, w.pick, false)}</li>`).join('') + '</ol>' : '') +
       '<button class="btn primary" id="qagain">再來一輪</button>';
     document.getElementById('qagain').onclick = quizStart; return;
   }
-  const Q = makeQ(quiz.pool); quiz.n++; quiz.done = false;
+  const Q = makeQ(); quiz.n++; quiz.done = false;
   body.innerHTML = `<div class="score"><span>第 ${quiz.n}／${ROUND} 題</span><span id="qscore">答對 ${quiz.ok} 題</span></div><div class="q">${esc(Q.text)}</div><div class="opts${Q.long?' long':''}" id="qopts"></div><div class="fb" id="qfb"></div><button class="btn primary" id="qnext" disabled>${quiz.n >= ROUND ? '看成績' : '下一題 →'}</button>`;
   const box = document.getElementById('qopts');
-  for(const o of Q.opts){ const btn = document.createElement('button'); btn.textContent = o;
+  Q.opts.forEach((o, i) => { const btn = document.createElement('button'); btn.innerHTML = `<span class="ol">(${'ABCDE'[i]})</span> ${esc(o)}`; btn._v = o;
     btn.onclick = () => { if(quiz.done) return; quiz.done = true;
       const right = o === Q.ans; if(right) quiz.ok++; else quiz.wrong.push({q:Q, pick:o});
-      for(const x of box.children){ x.disabled = true; if(x.textContent === Q.ans) x.classList.add('ok'); }
+      for(const x of box.children){ x.disabled = true; if(x._v === Q.ans) x.classList.add('ok'); }
       if(!right) btn.classList.add('no');
       document.getElementById('qscore').textContent = `答對 ${quiz.ok} 題`;
-      document.getElementById('qfb').innerHTML = `${right ? '✅ 答對了！' : '❌ 正確答案是「'+esc(Q.ans)+'」。'}<br><span class="hint">「${esc(Q.e.t)}」＝我的${esc(Q.e.path)}；${esc(degTxt(Q.e))}。</span>`;
+      document.getElementById('qfb').innerHTML = `<div class="${right?'yes':'nope'}">${right ? '✅ 答對了！' : '❌ 答錯了，正確答案是「'+esc(Q.ans)+'」。'}</div>` + explainHtml(Q, o, right);
       document.getElementById('qnext').disabled = false; };
-    box.appendChild(btn); }
+    box.appendChild(btn); });
   document.getElementById('qnext').onclick = quizNext;
 }
-document.getElementById('qset').innerHTML = '範圍 ' + optHtml('qscope', SCOPE_OPT) + ' 難度 ' + optHtml('qlevel', LEVEL_OPT);
-document.getElementById('qscope').onchange = document.getElementById('qlevel').onchange = quizStart;
+document.getElementById('qset').innerHTML = '題型 ' + optHtml('qtype', [['mix','綜合'],['basic','基本題（稱謂、親等）'],['exam','會考風格題（情境、組合、法律）']]) + ' 範圍 ' + optHtml('qscope', SCOPE_OPT) + ' 難度 ' + optHtml('qlevel', LEVEL_OPT);
+document.getElementById('qtype').onchange = document.getElementById('qscope').onchange = document.getElementById('qlevel').onchange = quizStart;
 
 /* ================= 分頁 ================= */
 for(const b of document.querySelectorAll('nav button')) b.onclick = () => {
